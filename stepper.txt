@@ -1,0 +1,60 @@
+
+#define IN1 PA0
+#define IN2 PA1
+#define IN3 PA2
+#define IN4 PA3
+
+// 8-step half-stepping sequence
+const int stepSequence[8][4] = {
+  {1, 0, 0, 0},
+  {1, 1, 0, 0},
+  {0, 1, 0, 0},
+  {0, 1, 1, 0},
+  {0, 0, 1, 0},
+  {0, 0, 1, 1},
+  {0, 0, 0, 1},
+  {1, 0, 0, 1}
+};
+
+int currentStep = 0;
+int delayTime = 5; // speed control (ms)
+
+void setup() {
+  pinMode(IN1, OUTPUT);
+  pinMode(IN2, OUTPUT);
+  pinMode(IN3, OUTPUT);
+  pinMode(IN4, OUTPUT);
+}
+
+void stepMotor(bool direction) {
+  if (direction)
+    currentStep++;
+  else
+    currentStep--;
+
+  if (currentStep > 7) currentStep = 0;
+  if (currentStep < 0) currentStep = 7;
+
+  digitalWrite(IN1, stepSequence[currentStep][0]);
+  digitalWrite(IN2, stepSequence[currentStep][1]);
+  digitalWrite(IN3, stepSequence[currentStep][2]);
+  digitalWrite(IN4, stepSequence[currentStep][3]);
+
+  delay(delayTime);
+}
+
+void loop() {
+
+  // Rotate clockwise 200 steps
+  for (int i = 0; i < 200; i++)
+    stepMotor(true);
+
+  delay(500);
+
+  // Rotate anti-clockwise 200 steps
+  for (int i = 0; i < 200; i++)
+    stepMotor(false);
+
+  delay(500);
+}
+

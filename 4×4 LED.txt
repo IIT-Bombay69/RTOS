@@ -1,0 +1,122 @@
+
+#define ROW0 PB0
+#define ROW1 PB1
+#define ROW2 PB2
+#define ROW3 PB3
+#define COL0 PB4
+#define COL1 PB5
+#define COL2 PB6
+#define COL3 PB7
+#define SEG_A PD0
+#define SEG_B PD1
+#define SEG_C PD2
+#define SEG_D PD3
+#define SEG_E PD4
+#define SEG_F PD5
+#define SEG_G PD6
+#define CTRL0 PC0
+#define CTRL1 PC1
+#define CTRL2 PC2
+#define CTRL3 PC3
+const byte segDigits[10][7] = {
+ {1,1,1,1,1,1,0}, // 0
+{0,1,1,0,0,0,0}, // 1
+ {1,1,0,1,1,0,1}, // 2
+ {1,1,1,1,0,0,1}, // 3
+ {0,1,1,0,0,1,1}, // 4
+ {1,0,1,1,0,1,1}, // 5
+ {1,0,1,1,1,1,1}, // 6
+ {1,1,1,0,0,0,0}, // 7
+ {1,1,1,1,1,1,1}, // 8
+ {1,1,1,1,0,1,1} // 9
+};
+char lastKey = '0';
+void setup() {
+ Serial.begin(9600);
+ pinMode(ROW0, OUTPUT); digitalWrite(ROW0, HIGH);
+ pinMode(ROW1, OUTPUT); digitalWrite(ROW1, HIGH);
+ pinMode(ROW2, OUTPUT); digitalWrite(ROW2, HIGH);
+ pinMode(ROW3, OUTPUT); digitalWrite(ROW3, HIGH);
+ pinMode(COL0, INPUT_PULLUP);
+ pinMode(COL1, INPUT_PULLUP);
+ pinMode(COL2, INPUT_PULLUP);
+ pinMode(COL3, INPUT_PULLUP);
+ pinMode(SEG_A, OUTPUT); digitalWrite(SEG_A, HIGH);
+pinMode(SEG_B, OUTPUT); digitalWrite(SEG_B, HIGH);
+ pinMode(SEG_C, OUTPUT); digitalWrite(SEG_C, HIGH);
+ pinMode(SEG_D, OUTPUT); digitalWrite(SEG_D, HIGH);
+ pinMode(SEG_E, OUTPUT); digitalWrite(SEG_E, HIGH);
+ pinMode(SEG_F, OUTPUT); digitalWrite(SEG_F, HIGH);
+ pinMode(SEG_G, OUTPUT); digitalWrite(SEG_G, HIGH);
+ pinMode(CTRL0, OUTPUT); digitalWrite(CTRL0, HIGH);
+ pinMode(CTRL1, OUTPUT); digitalWrite(CTRL1, HIGH);
+ pinMode(CTRL2, OUTPUT); digitalWrite(CTRL2, HIGH);
+ pinMode(CTRL3, OUTPUT); digitalWrite(CTRL3, HIGH);
+ displayDigit('0');
+}
+char scanKeypad() {
+ char keys[4][4] = {
+ {'1','2','3','A'},
+ {'4','5','6','B'},
+ {'7','8','9','C'},
+ {'*','0','#','D'}
+ };
+ digitalWrite(ROW0, LOW);
+ if (digitalRead(COL0) == LOW) { digitalWrite(ROW0, HIGH); delay(50); return keys[0][0]; }
+ if (digitalRead(COL1) == LOW) { digitalWrite(ROW0, HIGH); delay(50); return keys[0][1]; }
+ if (digitalRead(COL2) == LOW) { digitalWrite(ROW0, HIGH); delay(50); return keys[0][2]; }
+if (digitalRead(COL3) == LOW) { digitalWrite(ROW0, HIGH); delay(50); return keys[0][3]; }
+ digitalWrite(ROW0, HIGH);
+ digitalWrite(ROW1, LOW);
+ if (digitalRead(COL0) == LOW) { digitalWrite(ROW1, HIGH); delay(50); return keys[1][0]; }
+ if (digitalRead(COL1) == LOW) { digitalWrite(ROW1, HIGH); delay(50); return keys[1][1]; }
+ if (digitalRead(COL2) == LOW) { digitalWrite(ROW1, HIGH); delay(50); return keys[1][2]; }
+ if (digitalRead(COL3) == LOW) { digitalWrite(ROW1, HIGH); delay(50); return keys[1][3]; }
+ digitalWrite(ROW1, HIGH);
+ digitalWrite(ROW2, LOW);
+ if (digitalRead(COL0) == LOW) { digitalWrite(ROW2, HIGH); delay(50); return keys[2][0]; }
+ if (digitalRead(COL1) == LOW) { digitalWrite(ROW2, HIGH); delay(50); return keys[2][1]; }
+ if (digitalRead(COL2) == LOW) { digitalWrite(ROW2, HIGH); delay(50); return keys[2][2]; }
+ if (digitalRead(COL3) == LOW) { digitalWrite(ROW2, HIGH); delay(50); return keys[2][3]; }
+ digitalWrite(ROW2, HIGH);
+ digitalWrite(ROW3, LOW);
+ if (digitalRead(COL0) == LOW) { digitalWrite(ROW3, HIGH); delay(50); return keys[3][0]; }
+ if (digitalRead(COL1) == LOW) { digitalWrite(ROW3, HIGH); delay(50); return keys[3][1]; }
+ if (digitalRead(COL2) == LOW) { digitalWrite(ROW3, HIGH); delay(50); return keys[3][2]; }
+ if (digitalRead(COL3) == LOW) { digitalWrite(ROW3, HIGH); delay(50); return keys[3][3]; }
+ digitalWrite(ROW3, HIGH);
+ return '\0'; // Correct null char for "no key"
+}
+void displayDigit(char key) {
+ if (key >= '0' && key <= '9') {
+ int digit = key - '0';
+ digitalWrite(SEG_A, !segDigits[digit][0]);
+ digitalWrite(SEG_B, !segDigits[digit][1]);
+ digitalWrite(SEG_C, !segDigits[digit][2]);
+ digitalWrite(SEG_D, !segDigits[digit][3]);
+ digitalWrite(SEG_E, !segDigits[digit][4]);
+ digitalWrite(SEG_F, !segDigits[digit][5]);
+ digitalWrite(SEG_G, !segDigits[digit][6]);
+ } else {
+ digitalWrite(SEG_A, HIGH);
+ digitalWrite(SEG_B, HIGH);
+ digitalWrite(SEG_C, HIGH);
+ digitalWrite(SEG_D, HIGH);
+ digitalWrite(SEG_E, HIGH);
+ digitalWrite(SEG_F, HIGH);
+ digitalWrite(SEG_G, HIGH);
+ }
+}
+void loop() {
+ char key = scanKeypad();
+ if (key != '\0') {
+ Serial.print("Key pressed: ");
+ Serial.println(key);
+lastKey = key;
+ displayDigit(key);
+ } 
+ else {
+ displayDigit(lastKey);
+ }
+ delay(50);
+}

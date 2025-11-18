@@ -1,0 +1,39 @@
+
+#define PWM_PIN PA8 // TIM1_CH1 - PWM output 
+#define DIR_PIN1 PB0 // Motor Direction 1 
+#define DIR_PIN2 PB1 // Motor Direction 2 
+void setup() { 
+pinMode(PWM_PIN, OUTPUT); 
+pinMode(DIR_PIN1, OUTPUT); 
+pinMode(DIR_PIN2, OUTPUT); 
+// Initial direction: Forward 
+digitalWrite(DIR_PIN1, HIGH); 
+digitalWrite(DIR_PIN2, LOW); 
+} 
+void loop() { 
+// Gradually increase speed (0 → 255) 
+for (int duty = 0; duty <= 255; duty++) { 
+analogWrite(PWM_PIN, duty); 
+delay(10); 
+} 
+delay(1000); // Run at full speed 
+// Gradually decrease speed 
+for (int duty = 255; duty >= 0; duty--) { 
+analogWrite(PWM_PIN, duty); 
+delay(10); 
+} 
+analogWrite(PWM_PIN, 0); // Stop 
+delay(1000); 
+// Change direction: Reverse 
+digitalWrite(DIR_PIN1, LOW);
+digitalWrite(DIR_PIN2, HIGH); 
+// Ramp up again in reverse 
+for (int duty = 0; duty <= 255; duty++) { 
+analogWrite(PWM_PIN, duty); 
+delay(10); 
+} 
+delay(1000); 
+analogWrite(PWM_PIN, 0); // Stop 
+delay(1000); 
+}
+

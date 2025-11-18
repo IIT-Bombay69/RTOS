@@ -1,0 +1,110 @@
+
+// 4-digit common-anode 7-seg counter (STM32F407 on Arduino IDE)
+// Counts 0..100, rightmost digit increments first. Non-blocking multiplexing.
+
+// --- PIN CONFIG (change these to match your wiring) ---
+// Segment pins (A, B, C, D, E, F, G, DP) connected to these MCU pins:
+const uint8_t segPins[8] = {PD0, PD1, PD2, PD3, PD4, PD5, PD6, PD7}; // change if needed
+
+// Digit select pins (leftmost -> rightmost).
+// For common-anode: set digit pin LOW to turn that digit ON.
+const uint8_t digitPins[4] = {PC0, PC1, PC2, PC3}; // D3 = leftmost, D0 = rightmost
+
+// --- 7-segment codes for COMMON-ANODE (0 = segment ON, 1 = OFF)
+// Bit order: bit0 -> segment A, bit1 -> B, ... bit6 -> G, bit7 -> DP
+const uint8_t segCode[11] = {
+  0xC0, // 0 -> 1100 0000 (A..G,DP)  (0 bits = ON)
+  0xF9, // 1
+  0xA4, // 2
+  0xB0, // 3
+  0x99, // 4
+  0x92, // 5
+  0x82, // 6
+  0xF8, // 7
+  0x80, // 8
+  0x90, // 9
+  0xFF  // BLANK (all segments OFF)
+};
+
+unsigned long lastCountMillis = 0;
+const unsigned long countInterval = 300; // ms between increments
+
+// Multiplexing state
+uint8_t currentDigit = 0; // which digit to refresh (0..3)
+unsigned long lastRefreshMillis = 0;
+const unsigned long refreshInterval = 2; // ms per digit (fast refresh)
+
+int counterValue = 0; // 0..100
+
+void setup() {
+  // set segment pins as OUTPUT
+  for (uint8_t i = 0; i < 8; ++i) pinMode(segPins[i], OUTPUT);
+
+  // set digit pins as OUTPUT and turn all digits OFF initially (HIGH for common-anode)
+  for (uint8_t i = 0; i < 4; ++i) {
+    pinMode(digitPins[i], OUTPUT);
+    digitalWrite(digitPins[i], HIGH); // HIGH = OFF for common-anode
+  }
+
+  // make sure segments are off initially
+  setSegmentsBlank();
+}
+
+void loop() {
+  unsigned long now = millis();
+
+  // --- handle counting every countInterval ms ---
+  if (now - lastCountMillis >= countInterval) {
+    lastCountMillis = now;
+    counterValue++;
+    if (counterValue > 100) counterValue = 0; // wrap around
+  }
+
+  // --- multiplexing: refresh one digit every refreshInterval ms ---
+  if (now - lastRefreshMillis >= refreshInterval) {
+    lastRefreshMillis = now;
+    refreshOneDigit(currentDigit);
+    currentDigit = (currentDigit + 1) & 0x03; // 0..3
+  }
+}
+
+// Display a single digit position (0 = leftmost, 3 = rightmost)
+void refreshOneDigit(uint8_t pos) {
+  // turn all digits OFF first
+  for (uint8_t i = 0; i < 4; ++i) digitalWrite(digitPins[i], HIGH);
+
+  // find value for this position (right aligned)
+  // pos 0 -> thousands, pos 1 -> hundreds, pos 2 -> tens, pos 3 -> ones
+  int pow10[4] = {1000, 100, 10, 1};
+  int val = (counterValue / pow10[pos]) % 10;
+
+  // decide whether to show blank for leading zeros
+  bool showBlank = false;
+  if (pos < 3) { // for left 3 positions (0,1,2) we may blank them
+    // If the counterValue is smaller than the place value that this digit represents,
+    // and all more-significant digits are zero, then blank it.
+    // Example: counterValue=5 -> pos 0,1,2 blank; pos 3 shows 5
+    if (counterValue < pow10[pos + 1]) showBlank = true;
+  }
+  // For the leftmost (pos=0) pow10[pos+1]=100 so numbers <100 will blank pos0, etc.
+
+  uint8_t code = showBlank ? segCode[10] : segCode[val];
+
+  // write segment pins according to code (common-anode: 0 => ON -> write LOW)
+  for (uint8_t i = 0; i < 8; ++i) {
+    uint8_t bit = (code >> i) & 0x01;
+    digitalWrite(segPins[i], bit ? HIGH : LOW);
+  }
+
+  // enable this digit (LOW to turn ON for common-anode)
+  digitalWrite(digitPins[pos], LOW);
+
+  // short hold to allow the digit to appear (we keep it on only until next refresh call)
+  // (no delay here — multiplex timing handled by refreshInterval)
+}
+
+// turn all segments OFF (blank)
+void setSegmentsBlank() {
+  for (uint8_t i = 0; i < 8; ++i) digitalWrite(segPins[i], HIGH); // HIGH = off for common anode
+}
+
